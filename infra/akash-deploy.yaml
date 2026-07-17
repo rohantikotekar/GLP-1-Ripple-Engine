@@ -29,8 +29,6 @@ services:
       - https_proxy=http://guardrail:3128
       - NO_PROXY=localhost,127.0.0.1,guardrail,ripple-engine
       - no_proxy=localhost,127.0.0.1,guardrail,ripple-engine
-    depends_on:
-      - guardrail
     expose:
       - port: 8000
         as: 80
