@@ -10,6 +10,7 @@ session-bearer auth (POST /login) and read access to nexsets
 """
 
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
@@ -30,56 +31,113 @@ _UNIFIED_NEXSET_ID = 435573
 
 _REQUEST_TIMEOUT = 20
 
+# How long a Nexset read stays cached before we're willing to hit the Express
+# API for it again. Nexla only refreshes these Nexsets on its own schedule
+# (6h for trials/FDA, 15m for news - see datasources.md), so re-reading more
+# often than this just burns rate-limit budget for no fresher data.
+_SAMPLES_CACHE_TTL = 30
+
+# One retry on a 429, honoring Retry-After if the Express API sends one.
+_RATE_LIMIT_RETRY_DEFAULT_WAIT = 5
+
 
 class _NexlaConfigError(RuntimeError):
     pass
 
 
 class _ExpressNexlaClient:
-    """Thin client for the Nexla Express API wrapper (login + nexset reads)."""
+    """Thin client for the Nexla Express API wrapper (login + nexset reads).
+
+    Meant to be built once and reused (see `_get_client()`) rather than
+    per-call: it caches both the bearer token and recent Nexset reads, since
+    the Express API rate-limits `GET /nexla/nexsets/{id}` on rapid repeated
+    calls and a fresh instance per call defeats both caches.
+    """
 
     def __init__(self, base_url: str, service_key: str):
         self._base_url = base_url.rstrip("/")
         self._service_key = service_key
         self._access_token: Optional[str] = None
         self._token_expiry: float = 0
+        self._token_lock = threading.Lock()
+        self._samples_cache: Dict[int, tuple] = {}  # nexset_id -> (fetched_at, samples)
+        self._samples_cache_lock = threading.Lock()
 
     def _ensure_token(self) -> str:
-        if self._access_token and time.time() < self._token_expiry - 30:
+        with self._token_lock:
+            if self._access_token and time.time() < self._token_expiry - 30:
+                return self._access_token
+
+            response = requests.post(
+                f"{self._base_url}/login",
+                json={"service_key": self._service_key},
+                timeout=_REQUEST_TIMEOUT,
+            )
+            response.raise_for_status()
+            data = response.json()
+            self._access_token = data["access_token"]
+            # expires_at is an epoch-seconds timestamp from the Express API.
+            self._token_expiry = float(data.get("expires_at", time.time() + 3600))
             return self._access_token
 
-        response = requests.post(
-            f"{self._base_url}/login",
-            json={"service_key": self._service_key},
-            timeout=_REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()
-        data = response.json()
-        self._access_token = data["access_token"]
-        # expires_at is an epoch-seconds timestamp from the Express API.
-        self._token_expiry = float(data.get("expires_at", time.time() + 3600))
-        return self._access_token
-
-    def get_nexset_samples(self, nexset_id: int) -> List[Dict[str, Any]]:
-        token = self._ensure_token()
-        response = requests.get(
+    def _get(self, nexset_id: int, token: str) -> requests.Response:
+        return requests.get(
             f"{self._base_url}/nexla/nexsets/{nexset_id}",
             headers={"Authorization": f"Bearer {token}"},
             timeout=_REQUEST_TIMEOUT,
         )
+
+    def get_nexset_samples(self, nexset_id: int) -> List[Dict[str, Any]]:
+        with self._samples_cache_lock:
+            cached = self._samples_cache.get(nexset_id)
+            if cached and time.time() - cached[0] < _SAMPLES_CACHE_TTL:
+                return cached[1]
+
+        token = self._ensure_token()
+        response = self._get(nexset_id, token)
+
+        if response.status_code == 429:
+            wait = float(response.headers.get("Retry-After", _RATE_LIMIT_RETRY_DEFAULT_WAIT))
+            time.sleep(wait)
+            response = self._get(nexset_id, token)
+
         response.raise_for_status()
-        return response.json().get("samples", [])
+        samples = response.json().get("samples", [])
+
+        with self._samples_cache_lock:
+            self._samples_cache[nexset_id] = (time.time(), samples)
+        return samples
+
+
+_client_lock = threading.Lock()
+_client: Optional[_ExpressNexlaClient] = None
 
 
 def _build_client() -> _ExpressNexlaClient:
-    service_key = os.getenv("NEXLA_SERVICE_KEY")
-    base_url = os.getenv("NEXLA_API_URL")
-    if not service_key or not base_url:
-        raise _NexlaConfigError(
-            "Nexla is not configured: set NEXLA_SERVICE_KEY and NEXLA_API_URL "
-            "in the environment before calling search_feeds()."
-        )
-    return _ExpressNexlaClient(base_url, service_key)
+    """Return the shared `_ExpressNexlaClient`, building it once.
+
+    A single long-lived client is what makes the token cache and samples
+    cache in `_ExpressNexlaClient` actually do anything - building a fresh
+    client per `search_feeds()` call (the old behavior) reset both caches
+    every time and re-triggered a `/login` on every call.
+    """
+    global _client
+    if _client is not None:
+        return _client
+
+    with _client_lock:
+        if _client is not None:
+            return _client
+
+        service_key = os.getenv("NEXLA_SERVICE_KEY")
+        base_url = os.getenv("NEXLA_API_URL")
+        if not service_key or not base_url:
+            raise _NexlaConfigError(
+                "Nexla is not configured: set NEXLA_SERVICE_KEY and NEXLA_API_URL "
+                "in the environment before calling search_feeds()."
+            )
+        _client = _ExpressNexlaClient(base_url, service_key)
+        return _client
 
 
 def _resolve_nexset_id(source: str) -> Optional[int]:

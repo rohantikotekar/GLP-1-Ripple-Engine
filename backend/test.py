@@ -8,7 +8,7 @@ for line in Path(__file__).with_name(".env").read_text().splitlines():
     key, value = line.split("=", 1)
     os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
-from feed_search import search_unified_feed
+from feed_search import search_feeds
 
-test = search_unified_feed("Novo Nordisk")
+test = search_feeds("Novo nordisk")
 print(test)
