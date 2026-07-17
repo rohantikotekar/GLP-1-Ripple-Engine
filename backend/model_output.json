@@ -1,0 +1,17 @@
+{
+  "catalysts": [
+    {
+      "id": "NCT0xxxx",
+      "type": "phase3_readout|approval|new_indication|rx_volume",
+      "ticker_primary": "LLY",
+      "detail": "...",
+      "resolved": false,
+      "ts": "..."
+    }
+  ],
+  "prices": {
+    "LLY": 812.4,
+    "HSY": 168.1,
+    "RMD": 233.0
+  }
+}

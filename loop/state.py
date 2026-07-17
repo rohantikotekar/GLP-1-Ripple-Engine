@@ -31,8 +31,12 @@ def init_state():
         "log": [{"level": "info", "text": "loop initialized · book flat"}],
         "positions": positions,
         "pnl_total": 0.0,
-        "watchlist": ["GPCR", "LLY"],
-        "seen_catalysts": [],
+        # LOOP-ENG stop condition: the loop researches every company in this
+        # portfolio, then halts. A company is marked researched once the loop
+        # has processed a catalyst naming it as the primary ticker.
+        "research_portfolio": ["GPCR", "LLY"],
+        "researched": [],
+        "risk_limit": 50000.0,  # LOOP-ENG: max drawdown before the loop force-stops
     }
 
 
