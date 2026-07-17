@@ -275,10 +275,11 @@
 
 <script>
 /* ============================ CONFIG ============================ */
-// LIVE backend. Swap for P3's Akash URL WITHOUT editing code — just open:
-//   index.html?api=https://your-akash-url
-// If the loop ends up serving this file itself (same origin), set to "".
-const ENDPOINT = new URLSearchParams(location.search).get("api") || "http://localhost:8000";
+// LIVE backend. Defaults to P3's Akash deployment so LIVE mode just works.
+// Override without editing code:  index.html?api=http://localhost:8000  (local loop)
+// If the Akash lease changes, update the URL below (or use ?api=).
+const AKASH_URL = "https://uvl09gn0318of4bt400tbh6jb4.ingress.cpu.aesservices.net";
+const ENDPOINT = new URLSearchParams(location.search).get("api") || AKASH_URL;
 
 // Pretty labels for known sectors. Any sector P1/P2 add that isn't listed here
 // still renders — its key is title-cased as a fallback — so this never blocks
