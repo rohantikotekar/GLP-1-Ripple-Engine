@@ -1,0 +1,21 @@
+# Single-container build: loop + egress guardrail together.
+# The guardrail runs on 127.0.0.1:3128 inside the container and the loop's
+# egress is routed through it (see entrypoint.sh). Deploys via Akash Console's
+# single-service flow while keeping the guardrail live.
+FROM python:3.11-slim
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY loop ./loop
+COPY data ./data
+COPY contracts ./contracts
+
+COPY infra/guardrail/proxy.py       /app/proxy.py
+COPY infra/guardrail/allowlist.txt  /etc/guardrail/allowlist.txt
+COPY infra/guardrail/entrypoint.sh  /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 8000
+CMD ["/app/entrypoint.sh"]
