@@ -305,7 +305,7 @@ let mode = "demo";           // "demo" | "live"
 let i = 0, timer = null, livePoll = null, lastLiveTick = -1;
 let history = [];            // [{tick, net, longP, shortP}]
 let range = 8;
-let gateSeen = false, catalystsSeen = 0, lastAnimTick = -1;
+let gateSeen = false, catalystsSeen = 0, lastAnimTick = -1, netShown = 0;
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ============================ HELPERS ============================ */
@@ -313,12 +313,16 @@ const $ = id => document.getElementById(id);
 const money = n => (n>=0?"+$":"-$") + Math.abs(Math.round(n)).toLocaleString();
 const sumSide = (pos,side) => pos.filter(p=>p.side===side).reduce((a,p)=>a+p.pnl,0);
 function countUp(el,to){
-  if(REDUCED){ el.textContent=money(to); return; }
-  const from=parseFloat((el.textContent||"0").replace(/[^0-9.-]/g,""))||0;
-  const t0=performance.now(), dur=650;
-  const step=now=>{ const p=Math.min(1,(now-t0)/dur); el.textContent=money(from+(to-from)*(1-Math.pow(1-p,3)));
+  const from=netShown; netShown=to;
+  if(REDUCED||from===to){ el.textContent=money(to); return; }
+  el.textContent=money(from);
+  const t0=performance.now();
+  const step=now=>{ const p=Math.min(1,(now-t0)/650);
+    el.textContent=money(from+(to-from)*(1-Math.pow(1-p,3)));
     if(p<1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
+  // rAF is paused in background/throttled tabs — guarantee the final value lands.
+  setTimeout(()=>{ el.textContent=money(to); }, 720);
 }
 
 // (Re)build the sector cards from the loop's positions — but only when the set
@@ -496,7 +500,7 @@ async function inject(){
 /* ============================ SHARED ============================ */
 function resetRun(){
   stopDemo();
-  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1;
+  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1; netShown=0;
   sectorKeys=""; $("sectors").innerHTML=""; $("log").innerHTML="";
   if(mode==="demo") showDemo(0);  // render() rebuilds the sector cards from data
 }
@@ -514,7 +518,7 @@ async function liveReset(){
   // Restart the loop ON THE BACKEND (e.g. after it hit its stop condition),
   // then clear the UI for the next run. Backend without /reset just no-ops.
   try{ await fetch(ENDPOINT+"/reset",{method:"POST"}); }catch(err){}
-  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1;
+  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1; netShown=0;
   sectorKeys=""; $("sectors").innerHTML=""; $("log").innerHTML="";
 }
 
