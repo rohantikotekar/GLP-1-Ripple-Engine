@@ -1,0 +1,37 @@
+---
+# Akash SDL — deploys the loop container and exposes port 8000 (SPONSOR stub).
+# TODO(P3): image ref + resources + final pricing.
+version: "2.0"
+
+services:
+  ripple-engine:
+    # TODO(P3): push the infra/Dockerfile build and reference it here
+    image: <your-registry>/glp1-ripple-engine:latest
+    expose:
+      - port: 8000
+        as: 80
+        to:
+          - global: true
+
+profiles:
+  compute:
+    ripple-engine:
+      resources:
+        cpu:
+          units: 0.5
+        memory:
+          size: 512Mi
+        storage:
+          size: 512Mi
+  placement:
+    dcloud:
+      pricing:
+        ripple-engine:
+          denom: uakt
+          amount: 1000
+
+deployment:
+  ripple-engine:
+    dcloud:
+      profile: ripple-engine
+      count: 1

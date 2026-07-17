@@ -1,0 +1,25 @@
+# Pomerium egress policy (SPONSOR stub).
+# Guardrail on the autonomous book: the agent may reach ONLY the four data
+# feeds. Everything else is blocked.
+# TODO(P3): wrap the agent's outbound HTTP through this proxy and validate FIRST
+#           (this is the integration to de-risk in hour 1).
+
+egress_allowlist:
+  - clinicaltrials.gov      # trial phase / status
+  - api.fda.gov             # approvals / indications
+  - query1.finance.yahoo.com  # yfinance price backend
+  - www.fiercepharma.com    # news / RSS
+
+policy:
+  - from: https://agent.internal
+    to:
+      - https://clinicaltrials.gov
+      - https://api.fda.gov
+      - https://query1.finance.yahoo.com
+      - https://www.fiercepharma.com
+    allow:
+      and:
+        - domain:
+            is: allowlisted
+  # Default deny — any egress not matched above is refused.
+  default_action: deny

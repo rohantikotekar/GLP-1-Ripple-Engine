@@ -1,3 +1,23 @@
-node_modules
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Env / secrets
+.env
+
+# Loop runtime state
+state.json
+
+# Node
+node_modules/
+
+# Tooling
 .claude
 **/.env
+
+# OS
+.DS_Store
+Thumbs.db
