@@ -15,14 +15,12 @@ cd "$ROOT"
 LOOP_IMG="$REGISTRY/glp1-ripple-engine:latest"
 GUARD_IMG="$REGISTRY/glp1-guardrail:latest"
 
-echo "==> building loop image      $LOOP_IMG"
-docker build -f infra/Dockerfile           -t "$LOOP_IMG"  .
-echo "==> building guardrail image $GUARD_IMG"
-docker build -f infra/guardrail/Dockerfile -t "$GUARD_IMG" .
-
-echo "==> pushing images"
-docker push "$LOOP_IMG"
-docker push "$GUARD_IMG"
+# Akash providers run amd64. Build for linux/amd64 explicitly so this works even
+# from an Apple Silicon (arm64) Mac — otherwise the container 503s on the provider.
+echo "==> building + pushing loop image (linux/amd64)      $LOOP_IMG"
+docker buildx build --platform linux/amd64 -f infra/Dockerfile           -t "$LOOP_IMG"  --push .
+echo "==> building + pushing guardrail image (linux/amd64) $GUARD_IMG"
+docker buildx build --platform linux/amd64 -f infra/guardrail/Dockerfile -t "$GUARD_IMG" --push .
 
 echo "==> stamping REGISTRY into a deploy copy of the SDL"
 sed "s#<REGISTRY>#$REGISTRY#g" infra/akash-deploy.yaml > infra/akash-deploy.generated.yaml
