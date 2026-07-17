@@ -5,6 +5,11 @@
 #
 # Four data sources (P2):
 
+# The loop's LIVE sense step now fetches all feeds THROUGH Nexla's Express API,
+# so the agent's real egress target is Nexla. Keep the direct source hosts too
+# for any direct calls / fallback.
+nexla.com                 # Nexla Express API (dev-api-express-code.nexla.com) — LIVE sense
+
 clinicaltrials.gov        # source 1 — trial phase / status
 api.fda.gov               # source 2 — openFDA REST API (real request host)
 open.fda.gov              # source 2 — openFDA docs/portal host
