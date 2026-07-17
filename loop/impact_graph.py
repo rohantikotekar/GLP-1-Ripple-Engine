@@ -3,11 +3,11 @@
 # alcohol down, CPAP/sleep-apnea threatened, dialysis marginally affected).
 # P1/P2 tune the edges.
 IMPACT = {
-    "phase3_readout_positive": {
+    "phase3_readout": {
         "drug_maker": +0.06, "snacks": -0.02, "alcohol": -0.015,
         "sleep_apnea": -0.02, "dialysis": -0.005,
     },
-    "new_indication_sleep_apnea": {"sleep_apnea": -0.05, "drug_maker": +0.02},
+    "new_indication": {"sleep_apnea": -0.05, "drug_maker": +0.02},
     "approval": {
         "drug_maker": +0.04, "snacks": -0.015, "alcohol": -0.01, "sleep_apnea": -0.015,
     },

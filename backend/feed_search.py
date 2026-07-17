@@ -278,6 +278,32 @@ def search_feeds(query: str) -> Dict[str, Any]:
     return {"results": results, "errors": errors}
 
 
+def get_raw_samples(source: str) -> List[Dict[str, Any]]:
+    """Return the raw (un-normalized) Nexset samples for one logical source.
+
+    source: one of 'clinicaltrials', 'openfda', 'yahoo', 'news', or 'union'.
+    Records are the raw Nexla shape ({entity, event_type, event_date,
+    source, payload} for clinicaltrials/openfda/yahoo/union, raw RSS-as-JSON
+    for news) - not the {source, title, summary, url, ts} shape
+    `search_feeds`/`search_unified_feed` normalize into. Use this only when a
+    caller genuinely needs the raw fields (e.g. filtering on `entity`/
+    `event_type` directly, as `data/test_feeds.py` does); prefer
+    `search_feeds`/`search_unified_feed` otherwise.
+    """
+    client = _build_client()
+    if source == "union":
+        return client.get_nexset_samples(_UNIFIED_NEXSET_ID)
+    if source not in _NEXSET_ID_ENV_VARS:
+        raise ValueError(f"Unknown source: {source}")
+    nexset_id = _resolve_nexset_id(source)
+    if nexset_id is None:
+        raise _NexlaConfigError(
+            f"{_NEXSET_ID_ENV_VARS[source]} is not set; "
+            f"the {source} Nexset is not configured."
+        )
+    return client.get_nexset_samples(nexset_id)
+
+
 def search_unified_feed(query: str) -> Dict[str, Any]:
     """Search the single pre-joined Nexset (ID 435573) that unions all 4
     sources, instead of fanning out to per-source Nexsets.

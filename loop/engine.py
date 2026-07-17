@@ -29,8 +29,8 @@ def tick(state, incoming_catalyst=None):
     catalyst = incoming_catalyst
     primary = catalyst.get("ticker_primary", "")
     log.append({"level": "catalyst",
-                "text": f"CATALYST · {catalyst.get('headline', '?')} "
-                        f"· {catalyst.get('source', '?')}"})
+                "text": f"CATALYST · {catalyst.get('detail', '?')} "
+                        f"· {catalyst.get('id') or 'n/a'}"})
 
     # --- plan (verification gate / self-correct) -----------------------------
     ok, corrected = gate.verify(catalyst)
@@ -50,7 +50,13 @@ def tick(state, incoming_catalyst=None):
     log.append({"level": "info",
                 "text": f"act · catalyst type={chosen_type} confirmed by {decided_by}"
                         + (" (Akash-hosted)" if decided_by == "akash-model" else "")})
-    state["catalyst"] = {k: catalyst.get(k) for k in ("headline", "source", "type")}
+    # P4's UI tick contract (contracts/schema.md) still expects
+    # headline/source/type - adapt from the new catalyst-candidate shape.
+    state["catalyst"] = {
+        "headline": catalyst.get("detail"),
+        "source": catalyst.get("id"),
+        "type": catalyst.get("type"),
+    }
     impact_graph.apply(state, catalyst)
     log.append({"level": "info",
                 "text": "propagating through impact graph → "

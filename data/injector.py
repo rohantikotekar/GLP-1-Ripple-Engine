@@ -16,17 +16,21 @@ import httpx
 # The scripted demo sequence — mirrors contracts/mock-events.json.
 DEMO_CATALYSTS = [
     {
-        "headline": "Structure aleniglipron Phase 3 positive",
-        "source": "ClinicalTrials.gov + news",
-        "type": "phase3_readout_positive",
+        "id": "NCT-DEMO-ALENIGLIPRON",
+        "type": "phase3_readout",
         "ticker_primary": "GPCR",
+        "detail": "Structure aleniglipron Phase 3 positive",
+        "resolved": False,
+        "ts": None,
         "phase": "Phase 2b",  # invalid phase → triggers the self-correct gate
     },
     {
-        "headline": "Zepbound expanded to sleep apnea",
-        "source": "openFDA",
-        "type": "new_indication_sleep_apnea",
+        "id": "NDA-DEMO-ZEPBOUND-SLEEPAPNEA",
+        "type": "new_indication",
         "ticker_primary": "LLY",
+        "detail": "Zepbound expanded to sleep apnea",
+        "resolved": False,
+        "ts": None,
         "phase": "Phase 3",
     },
 ]
@@ -35,7 +39,7 @@ DEMO_CATALYSTS = [
 def fire(url, catalyst):
     r = httpx.post(f"{url}/inject", json=catalyst, timeout=10)
     r.raise_for_status()
-    print(f"injected: {catalyst['headline']} -> {r.json()}")
+    print(f"injected: {catalyst['detail']} -> {r.json()}")
 
 
 def main():

@@ -56,6 +56,12 @@ def main():
     # (e.g. yfinance not installed, or network/rate-limit issues).
     show("feeds.fetch_prices(['LLY', 'NVO'])", feeds.fetch_prices(["LLY", "NVO"]))
 
+    # feeds.fetch_watchlist_prices: on-demand yfinance pull for the broader
+    # GLP-1 ripple watchlist (WATCHLIST_TICKERS). Pulls a 5-day window and
+    # forward-fills, so it still returns a price when the market is closed.
+    show("feeds.WATCHLIST_TICKERS", feeds.WATCHLIST_TICKERS)
+    show("feeds.fetch_watchlist_prices()", feeds.fetch_watchlist_prices())
+
     # NexlaSource.pull: the loop's entry point — one shared search_feeds
     # call reused across all 3 catalyst sources, plus prices.
     pulled = NexlaSource().pull()

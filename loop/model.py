@@ -32,8 +32,8 @@ import httpx
 from loop import tools as loop_tools
 
 ALLOWED_TYPES = {
-    "phase3_readout_positive",
-    "new_indication_sleep_apnea",
+    "phase3_readout",
+    "new_indication",
     "approval",
     "rx_volume",
 }

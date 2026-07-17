@@ -56,6 +56,26 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "fetch_watchlist_prices",
+            "description": "Latest close per ticker for the broader GLP-1 ripple watchlist "
+                            "(LLY, NVO, ABT, JNJ, RHHBY, MDT, NSRGY, AMGN, VKTX, DXCM, HIMS, "
+                            "PFE, UNH, CVS, PEP), via yfinance. If the market is closed, "
+                            "returns each ticker's last available close.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tickers": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Tickers to price; defaults to the full watchlist.",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "nexla_pull",
             "description": "One merged Nexla read: {catalysts, prices} across trials/FDA/news/prices in a single call.",
             "parameters": {"type": "object", "properties": {}},
@@ -91,6 +111,8 @@ def call_tool(name, arguments):
         return feeds.fetch_news()
     if name == "fetch_prices":
         return feeds.fetch_prices(arguments.get("tickers"))
+    if name == "fetch_watchlist_prices":
+        return feeds.fetch_watchlist_prices(arguments.get("tickers"))
     if name == "nexla_pull":
         return _NEXLA.pull()
     if name == "inject_demo_catalyst":
