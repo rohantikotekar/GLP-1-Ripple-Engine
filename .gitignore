@@ -16,6 +16,7 @@ node_modules/
 
 # Tooling
 .claude
+**/.env
 
 # OS
 .DS_Store
