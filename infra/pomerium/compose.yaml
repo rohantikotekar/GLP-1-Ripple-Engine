@@ -1,0 +1,20 @@
+# Pomerium Zero data plane — connects to the hosted control plane (console.pomerium.app)
+# and enforces the route + policy you configure there in front of the loop API.
+#
+#   1. In console.pomerium.app, copy your cluster token (Docker tab on onboarding).
+#   2. export POMERIUM_ZERO_TOKEN=<paste-token>
+#   3. docker compose -f infra/pomerium/compose.yaml up
+#
+# The route's upstream is set IN THE CONSOLE (not here). Point it at the live loop:
+#   upstream = http://uvl09gn0318of4bt400tbh6jb4.ingress.cpu.aesservices.net
+# so Pomerium can run anywhere and still reach the loop on Akash.
+
+services:
+  pomerium:
+    image: pomerium/pomerium:latest
+    environment:
+      POMERIUM_ZERO_TOKEN: ${POMERIUM_ZERO_TOKEN:?set POMERIUM_ZERO_TOKEN from the Zero console}
+    ports:
+      - "443:443"
+      - "80:80"
+    restart: unless-stopped
