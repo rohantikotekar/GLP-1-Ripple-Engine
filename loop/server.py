@@ -1,7 +1,9 @@
 import asyncio
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from loop import state as st, engine
 
@@ -11,8 +13,21 @@ app.add_middleware(
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
 
+# The P4 dashboard, served from the same origin as the API.
+FRONTEND = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "index.html")
+
 _state = st.load()
 _pending = []  # injected catalysts, FIFO
+
+
+@app.get("/")
+def dashboard():
+    # One public URL: the Akash lease serves this dashboard, which polls /state
+    # on the same origin — no CORS, no mixed-content. If the file isn't shipped
+    # in the image, fall through to a hint instead of a 500.
+    if os.path.exists(FRONTEND):
+        return FileResponse(FRONTEND)
+    return {"service": "GLP-1 Ripple Engine", "hint": "frontend/index.html not bundled; GET /state for data"}
 
 
 @app.get("/state")
