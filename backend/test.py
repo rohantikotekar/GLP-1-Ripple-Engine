@@ -10,5 +10,5 @@ for line in Path(__file__).with_name(".env").read_text().splitlines():
 
 from feed_search import search_feeds
 
-test = search_feeds("")
+test = search_feeds("Novo nordisk")
 print(test)

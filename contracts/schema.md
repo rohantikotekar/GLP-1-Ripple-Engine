@@ -40,7 +40,7 @@ When P1's loop goes live, P4 swaps the embedded `EVENTS` const for a poll of
 
 ## Catalyst types the impact graph understands
 
-- `phase3_readout_positive`
-- `new_indication_sleep_apnea`
+- `phase3_readout`
+- `new_indication`
 - `approval`
 - `rx_volume`
