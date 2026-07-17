@@ -24,6 +24,10 @@ _NEXSET_ID_ENV_VARS = {
     "news": "NEXLA_NEXSET_ID_NEWS",
 }
 
+# The pre-joined Nexset that unions all 4 sources into one feed, so callers
+# who don't need per-source isolation can read one Nexset instead of 4.
+_UNIFIED_NEXSET_ID = 435573
+
 _REQUEST_TIMEOUT = 20
 
 
@@ -214,3 +218,28 @@ def search_feeds(query: str) -> Dict[str, Any]:
                 results.extend(outcome["results"])
 
     return {"results": results, "errors": errors}
+
+
+def search_unified_feed(query: str) -> Dict[str, Any]:
+    """Search the single pre-joined Nexset (ID 435573) that unions all 4
+    sources, instead of fanning out to per-source Nexsets.
+
+    One request instead of 4 - use this over `search_feeds` when per-source
+    error isolation isn't needed and avoiding extra load on the rate-limited
+    Express API matters more. Each record is normalized using its own
+    `source` field (clinicaltrials/openfda/yahoo/news), same as `search_feeds`.
+    Returns a JSON-serializable dict:
+        {"results": [...], "errors": [{"source": "union", "reason": ...}, ...]}
+    """
+    client = _build_client()
+
+    try:
+        samples = client.get_nexset_samples(_UNIFIED_NEXSET_ID)
+        results = [
+            _normalize(sample, sample.get("source"))
+            for sample in samples
+            if _matches_query(sample, query)
+        ]
+        return {"results": results, "errors": []}
+    except Exception as exc:  # noqa: BLE001 - isolate failure like search_feeds does per-source
+        return {"results": [], "errors": [{"source": "union", "reason": str(exc)}]}
