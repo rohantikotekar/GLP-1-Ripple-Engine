@@ -7,7 +7,7 @@
     "log": [
       {
         "level": "info",
-        "text": "tick 0 \u00b7 sensing 4 feeds (ClinicalTrials.gov, openFDA, prices, news)"
+        "text": "tick 0 \u00b7 sensing 4 feeds (ClinicalTrials.gov, openFDA, prices, news) \u00b7 21 names / 8 sectors"
       },
       {
         "level": "muted",
@@ -56,9 +56,49 @@
         "pnl": 0.0
       },
       {
+        "ticker": "AMGN",
+        "name": "Amgen",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 300.0,
+        "price": 300.0,
+        "shares": 10,
+        "pnl": 0.0
+      },
+      {
+        "ticker": "RHHBY",
+        "name": "Roche",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 40.0,
+        "price": 40.0,
+        "shares": 50,
+        "pnl": 0.0
+      },
+      {
+        "ticker": "PFE",
+        "name": "Pfizer",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 28.0,
+        "price": 28.0,
+        "shares": 100,
+        "pnl": 0.0
+      },
+      {
+        "ticker": "HIMS",
+        "name": "Hims & Hers",
+        "sector": "telehealth",
+        "side": "long",
+        "entry": 22.0,
+        "price": 22.0,
+        "shares": 100,
+        "pnl": 0.0
+      },
+      {
         "ticker": "HSY",
         "name": "Hershey",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 168.0,
         "price": 168.0,
@@ -68,11 +108,31 @@
       {
         "ticker": "MDLZ",
         "name": "Mondelez",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 66.0,
         "price": 66.0,
         "shares": -50,
+        "pnl": -0.0
+      },
+      {
+        "ticker": "PEP",
+        "name": "PepsiCo",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 170.0,
+        "price": 170.0,
+        "shares": -20,
+        "pnl": -0.0
+      },
+      {
+        "ticker": "NSRGY",
+        "name": "Nestle",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 110.0,
+        "price": 110.0,
+        "shares": -20,
         "pnl": -0.0
       },
       {
@@ -116,6 +176,26 @@
         "pnl": -0.0
       },
       {
+        "ticker": "MDT",
+        "name": "Medtronic",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 85.0,
+        "price": 85.0,
+        "shares": -30,
+        "pnl": -0.0
+      },
+      {
+        "ticker": "DXCM",
+        "name": "DexCom",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 75.0,
+        "price": 75.0,
+        "shares": -20,
+        "pnl": -0.0
+      },
+      {
         "ticker": "DVA",
         "name": "DaVita",
         "sector": "dialysis",
@@ -123,6 +203,26 @@
         "entry": 145.0,
         "price": 145.0,
         "shares": -10,
+        "pnl": -0.0
+      },
+      {
+        "ticker": "UNH",
+        "name": "UnitedHealth",
+        "sector": "payers",
+        "side": "short",
+        "entry": 500.0,
+        "price": 500.0,
+        "shares": -8,
+        "pnl": -0.0
+      },
+      {
+        "ticker": "CVS",
+        "name": "CVS Health",
+        "sector": "payers",
+        "side": "short",
+        "entry": 60.0,
+        "price": 60.0,
+        "shares": -30,
         "pnl": -0.0
       }
     ],
@@ -142,7 +242,11 @@
         "delta": 1.0
       },
       {
-        "sector": "snacks",
+        "sector": "telehealth",
+        "delta": 0.6
+      },
+      {
+        "sector": "food_cpg",
         "delta": -0.4
       },
       {
@@ -154,26 +258,34 @@
         "delta": -0.3
       },
       {
+        "sector": "medical_devices",
+        "delta": -0.35
+      },
+      {
         "sector": "dialysis",
         "delta": -0.1
+      },
+      {
+        "sector": "payers",
+        "delta": -0.25
       }
     ],
     "log": [
       {
         "level": "catalyst",
-        "text": "CATALYST \u00b7 Structure Therapeutics (GPCR) aleniglipron Phase 3 obesity readout POSITIVE \u2014 16.3% weight loss, 2% discontinuation"
+        "text": "CATALYST \u00b7 Structure Therapeutics (GPCR) aleniglipron Phase 3 obesity readout POSITIVE \u2014 16.3% weight loss"
       },
       {
         "level": "info",
-        "text": "sensed via ClinicalTrials.gov NCT + news feed \u00b7 classified type=phase3_readout_positive \u00b7 primary=GPCR"
+        "text": "sensed via ClinicalTrials.gov NCT + news \u00b7 classified type=phase3_readout_positive \u00b7 primary=GPCR"
       },
       {
         "level": "info",
-        "text": "propagating through impact graph \u2192 drug_maker\u2191 snacks\u2193 alcohol\u2193 sleep_apnea\u2193 dialysis\u2193"
+        "text": "propagating \u2192 drug_maker\u2191 telehealth\u2191 food_cpg\u2193 alcohol\u2193 sleep_apnea\u2193 medical_devices\u2193 dialysis\u2193 payers\u2193"
       },
       {
         "level": "good",
-        "text": "book updated \u00b7 P&L +$2,132"
+        "text": "book updated across 8 sectors"
       }
     ],
     "positions": [
@@ -218,9 +330,49 @@
         "pnl": 1260.0
       },
       {
+        "ticker": "AMGN",
+        "name": "Amgen",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 300.0,
+        "price": 309.0,
+        "shares": 10,
+        "pnl": 90.0
+      },
+      {
+        "ticker": "RHHBY",
+        "name": "Roche",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 40.0,
+        "price": 40.8,
+        "shares": 50,
+        "pnl": 40.0
+      },
+      {
+        "ticker": "PFE",
+        "name": "Pfizer",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 28.0,
+        "price": 28.42,
+        "shares": 100,
+        "pnl": 42.0
+      },
+      {
+        "ticker": "HIMS",
+        "name": "Hims & Hers",
+        "sector": "telehealth",
+        "side": "long",
+        "entry": 22.0,
+        "price": 23.76,
+        "shares": 100,
+        "pnl": 176.0
+      },
+      {
         "ticker": "HSY",
         "name": "Hershey",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 168.0,
         "price": 164.64,
@@ -230,12 +382,32 @@
       {
         "ticker": "MDLZ",
         "name": "Mondelez",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 66.0,
         "price": 64.68,
         "shares": -50,
         "pnl": 66.0
+      },
+      {
+        "ticker": "PEP",
+        "name": "PepsiCo",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 170.0,
+        "price": 166.6,
+        "shares": -20,
+        "pnl": 68.0
+      },
+      {
+        "ticker": "NSRGY",
+        "name": "Nestle",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 110.0,
+        "price": 108.35,
+        "shares": -20,
+        "pnl": 33.0
       },
       {
         "ticker": "STZ",
@@ -278,6 +450,26 @@
         "pnl": 39.0
       },
       {
+        "ticker": "MDT",
+        "name": "Medtronic",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 85.0,
+        "price": 83.3,
+        "shares": -30,
+        "pnl": 51.0
+      },
+      {
+        "ticker": "DXCM",
+        "name": "DexCom",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 75.0,
+        "price": 72.75,
+        "shares": -20,
+        "pnl": 45.0
+      },
+      {
         "ticker": "DVA",
         "name": "DaVita",
         "sector": "dialysis",
@@ -286,9 +478,29 @@
         "price": 144.28,
         "shares": -10,
         "pnl": 7.2
+      },
+      {
+        "ticker": "UNH",
+        "name": "UnitedHealth",
+        "sector": "payers",
+        "side": "short",
+        "entry": 500.0,
+        "price": 495.0,
+        "shares": -8,
+        "pnl": 40.0
+      },
+      {
+        "ticker": "CVS",
+        "name": "CVS Health",
+        "sector": "payers",
+        "side": "short",
+        "entry": 60.0,
+        "price": 59.1,
+        "shares": -30,
+        "pnl": 27.0
       }
     ],
-    "pnl_total": 2132.0
+    "pnl_total": 2744.0
   },
   {
     "tick": 2,
@@ -351,9 +563,49 @@
         "pnl": 1260.0
       },
       {
+        "ticker": "AMGN",
+        "name": "Amgen",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 300.0,
+        "price": 309.0,
+        "shares": 10,
+        "pnl": 90.0
+      },
+      {
+        "ticker": "RHHBY",
+        "name": "Roche",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 40.0,
+        "price": 40.8,
+        "shares": 50,
+        "pnl": 40.0
+      },
+      {
+        "ticker": "PFE",
+        "name": "Pfizer",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 28.0,
+        "price": 28.42,
+        "shares": 100,
+        "pnl": 42.0
+      },
+      {
+        "ticker": "HIMS",
+        "name": "Hims & Hers",
+        "sector": "telehealth",
+        "side": "long",
+        "entry": 22.0,
+        "price": 23.76,
+        "shares": 100,
+        "pnl": 176.0
+      },
+      {
         "ticker": "HSY",
         "name": "Hershey",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 168.0,
         "price": 164.64,
@@ -363,12 +615,32 @@
       {
         "ticker": "MDLZ",
         "name": "Mondelez",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 66.0,
         "price": 64.68,
         "shares": -50,
         "pnl": 66.0
+      },
+      {
+        "ticker": "PEP",
+        "name": "PepsiCo",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 170.0,
+        "price": 166.6,
+        "shares": -20,
+        "pnl": 68.0
+      },
+      {
+        "ticker": "NSRGY",
+        "name": "Nestle",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 110.0,
+        "price": 108.35,
+        "shares": -20,
+        "pnl": 33.0
       },
       {
         "ticker": "STZ",
@@ -411,6 +683,26 @@
         "pnl": 39.0
       },
       {
+        "ticker": "MDT",
+        "name": "Medtronic",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 85.0,
+        "price": 83.3,
+        "shares": -30,
+        "pnl": 51.0
+      },
+      {
+        "ticker": "DXCM",
+        "name": "DexCom",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 75.0,
+        "price": 72.75,
+        "shares": -20,
+        "pnl": 45.0
+      },
+      {
         "ticker": "DVA",
         "name": "DaVita",
         "sector": "dialysis",
@@ -419,9 +711,29 @@
         "price": 144.28,
         "shares": -10,
         "pnl": 7.2
+      },
+      {
+        "ticker": "UNH",
+        "name": "UnitedHealth",
+        "sector": "payers",
+        "side": "short",
+        "entry": 500.0,
+        "price": 495.0,
+        "shares": -8,
+        "pnl": 40.0
+      },
+      {
+        "ticker": "CVS",
+        "name": "CVS Health",
+        "sector": "payers",
+        "side": "short",
+        "entry": 60.0,
+        "price": 59.1,
+        "shares": -30,
+        "pnl": 27.0
       }
     ],
-    "pnl_total": 2132.0
+    "pnl_total": 2744.0
   },
   {
     "tick": 3,
@@ -437,8 +749,16 @@
         "delta": -0.8
       },
       {
+        "sector": "medical_devices",
+        "delta": -0.5
+      },
+      {
         "sector": "drug_maker",
         "delta": 0.3
+      },
+      {
+        "sector": "telehealth",
+        "delta": 0.2
       }
     ],
     "log": [
@@ -448,11 +768,11 @@
       },
       {
         "level": "info",
-        "text": "classified type=new_indication_sleep_apnea \u00b7 propagating \u2192 sleep_apnea\u2193\u2193 drug_maker\u2191"
+        "text": "classified type=new_indication_sleep_apnea \u00b7 propagating \u2192 sleep_apnea\u2193\u2193 medical_devices\u2193 drug_maker\u2191 telehealth\u2191"
       },
       {
         "level": "good",
-        "text": "book updated \u00b7 RMD/INSP short thesis deepened \u00b7 P&L +$2,509"
+        "text": "book updated \u00b7 RMD/INSP/MDT short thesis deepened"
       }
     ],
     "positions": [
@@ -497,9 +817,49 @@
         "pnl": 1260.0
       },
       {
+        "ticker": "AMGN",
+        "name": "Amgen",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 300.0,
+        "price": 309.0,
+        "shares": 10,
+        "pnl": 90.0
+      },
+      {
+        "ticker": "RHHBY",
+        "name": "Roche",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 40.0,
+        "price": 40.8,
+        "shares": 50,
+        "pnl": 40.0
+      },
+      {
+        "ticker": "PFE",
+        "name": "Pfizer",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 28.0,
+        "price": 28.42,
+        "shares": 100,
+        "pnl": 42.0
+      },
+      {
+        "ticker": "HIMS",
+        "name": "Hims & Hers",
+        "sector": "telehealth",
+        "side": "long",
+        "entry": 22.0,
+        "price": 23.98,
+        "shares": 100,
+        "pnl": 198.0
+      },
+      {
         "ticker": "HSY",
         "name": "Hershey",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 168.0,
         "price": 164.64,
@@ -509,12 +869,32 @@
       {
         "ticker": "MDLZ",
         "name": "Mondelez",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 66.0,
         "price": 64.68,
         "shares": -50,
         "pnl": 66.0
+      },
+      {
+        "ticker": "PEP",
+        "name": "PepsiCo",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 170.0,
+        "price": 166.6,
+        "shares": -20,
+        "pnl": 68.0
+      },
+      {
+        "ticker": "NSRGY",
+        "name": "Nestle",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 110.0,
+        "price": 108.35,
+        "shares": -20,
+        "pnl": 33.0
       },
       {
         "ticker": "STZ",
@@ -557,6 +937,26 @@
         "pnl": 134.5
       },
       {
+        "ticker": "MDT",
+        "name": "Medtronic",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 85.0,
+        "price": 82.02,
+        "shares": -30,
+        "pnl": 89.4
+      },
+      {
+        "ticker": "DXCM",
+        "name": "DexCom",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 75.0,
+        "price": 71.62,
+        "shares": -20,
+        "pnl": 67.6
+      },
+      {
         "ticker": "DVA",
         "name": "DaVita",
         "sector": "dialysis",
@@ -565,9 +965,29 @@
         "price": 144.28,
         "shares": -10,
         "pnl": 7.2
+      },
+      {
+        "ticker": "UNH",
+        "name": "UnitedHealth",
+        "sector": "payers",
+        "side": "short",
+        "entry": 500.0,
+        "price": 494.0,
+        "shares": -8,
+        "pnl": 48.0
+      },
+      {
+        "ticker": "CVS",
+        "name": "CVS Health",
+        "sector": "payers",
+        "side": "short",
+        "entry": 60.0,
+        "price": 59.1,
+        "shares": -30,
+        "pnl": 27.0
       }
     ],
-    "pnl_total": 2509.0
+    "pnl_total": 3212.0
   },
   {
     "tick": 4,
@@ -585,7 +1005,7 @@
       },
       {
         "level": "good",
-        "text": "final book P&L +$2,509 \u00b7 runtime clean exit"
+        "text": "final book P&L +$3,212 \u00b7 runtime clean exit"
       }
     ],
     "positions": [
@@ -630,9 +1050,49 @@
         "pnl": 1260.0
       },
       {
+        "ticker": "AMGN",
+        "name": "Amgen",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 300.0,
+        "price": 309.0,
+        "shares": 10,
+        "pnl": 90.0
+      },
+      {
+        "ticker": "RHHBY",
+        "name": "Roche",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 40.0,
+        "price": 40.8,
+        "shares": 50,
+        "pnl": 40.0
+      },
+      {
+        "ticker": "PFE",
+        "name": "Pfizer",
+        "sector": "drug_maker",
+        "side": "long",
+        "entry": 28.0,
+        "price": 28.42,
+        "shares": 100,
+        "pnl": 42.0
+      },
+      {
+        "ticker": "HIMS",
+        "name": "Hims & Hers",
+        "sector": "telehealth",
+        "side": "long",
+        "entry": 22.0,
+        "price": 23.98,
+        "shares": 100,
+        "pnl": 198.0
+      },
+      {
         "ticker": "HSY",
         "name": "Hershey",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 168.0,
         "price": 164.64,
@@ -642,12 +1102,32 @@
       {
         "ticker": "MDLZ",
         "name": "Mondelez",
-        "sector": "snacks",
+        "sector": "food_cpg",
         "side": "short",
         "entry": 66.0,
         "price": 64.68,
         "shares": -50,
         "pnl": 66.0
+      },
+      {
+        "ticker": "PEP",
+        "name": "PepsiCo",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 170.0,
+        "price": 166.6,
+        "shares": -20,
+        "pnl": 68.0
+      },
+      {
+        "ticker": "NSRGY",
+        "name": "Nestle",
+        "sector": "food_cpg",
+        "side": "short",
+        "entry": 110.0,
+        "price": 108.35,
+        "shares": -20,
+        "pnl": 33.0
       },
       {
         "ticker": "STZ",
@@ -690,6 +1170,26 @@
         "pnl": 134.5
       },
       {
+        "ticker": "MDT",
+        "name": "Medtronic",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 85.0,
+        "price": 82.02,
+        "shares": -30,
+        "pnl": 89.4
+      },
+      {
+        "ticker": "DXCM",
+        "name": "DexCom",
+        "sector": "medical_devices",
+        "side": "short",
+        "entry": 75.0,
+        "price": 71.62,
+        "shares": -20,
+        "pnl": 67.6
+      },
+      {
         "ticker": "DVA",
         "name": "DaVita",
         "sector": "dialysis",
@@ -698,8 +1198,28 @@
         "price": 144.28,
         "shares": -10,
         "pnl": 7.2
+      },
+      {
+        "ticker": "UNH",
+        "name": "UnitedHealth",
+        "sector": "payers",
+        "side": "short",
+        "entry": 500.0,
+        "price": 494.0,
+        "shares": -8,
+        "pnl": 48.0
+      },
+      {
+        "ticker": "CVS",
+        "name": "CVS Health",
+        "sector": "payers",
+        "side": "short",
+        "entry": 60.0,
+        "price": 59.1,
+        "shares": -30,
+        "pnl": 27.0
       }
     ],
-    "pnl_total": 2509.0
+    "pnl_total": 3212.0
   }
 ]
