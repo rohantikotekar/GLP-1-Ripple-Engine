@@ -176,7 +176,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input placeholder="Search by ticker, sector, catalyst…"/>
       </div>
-      <div class="modewrap"><span id="modelbl">DEMO</span><div id="toggle" class="toggle"></div><span>LIVE</span></div>
+      <div class="modewrap"><span id="lbl-demo">DEMO</span><div id="toggle" class="toggle"></div><span id="lbl-live">LIVE</span></div>
       <div id="status" class="status run">RUNNING</div>
       <div class="ctrls">
         <button class="btn" id="play">▶ Play</button>
@@ -279,11 +279,11 @@
 // Override without editing code:  index.html?api=http://localhost:8000  (local loop)
 // If the Akash lease changes, update the URL below (or use ?api=).
 const AKASH_URL = "https://uvl09gn0318of4bt400tbh6jb4.ingress.cpu.aesservices.net";
-// When this page is served over http(s) — i.e. by the loop itself, e.g. the
-// Akash lease — poll that SAME origin (one URL, no CORS/mixed-content). Opened
-// as a local file:// it falls back to the Akash URL. ?api= always wins.
-const sameOrigin = location.protocol.startsWith("http") ? location.origin : "";
-const ENDPOINT = new URLSearchParams(location.search).get("api") || sameOrigin || AKASH_URL;
+// LIVE backend. Defaults to the Akash deployment — works whether this page is
+// opened as a file, from a static host (GitHub Pages), OR served by the Akash
+// lease itself (there AKASH_URL is the same origin, so no CORS).
+// Point at a local loop for private rehearsal:  index.html?api=http://localhost:8000
+const ENDPOINT = new URLSearchParams(location.search).get("api") || AKASH_URL;
 
 // Pretty labels for known sectors. Any sector P1/P2 add that isn't listed here
 // still renders — its key is title-cased as a fallback — so this never blocks
@@ -485,8 +485,8 @@ function startLive(){ if(livePoll) return; lastLiveTick=-1; pollLive(); livePoll
 function stopLive(){ clearInterval(livePoll); livePoll=null; }
 async function inject(){
   const demoCats=[
-    {headline:"Structure aleniglipron Phase 3 positive",source:"ClinicalTrials.gov + news",type:"phase3_readout_positive",ticker_primary:"GPCR",phase:"Phase 2b"},
-    {headline:"Zepbound expanded to sleep apnea",source:"openFDA",type:"new_indication_sleep_apnea",ticker_primary:"LLY",phase:"Phase 3"},
+    {id:"NCT-DEMO-ALENIGLIPRON",type:"phase3_readout",ticker_primary:"GPCR",detail:"Structure aleniglipron Phase 3 positive",resolved:false,ts:null,phase:"Phase 2b"},
+    {id:"NDA-DEMO-ZEPBOUND-SLEEPAPNEA",type:"new_indication",ticker_primary:"LLY",detail:"Zepbound expanded to sleep apnea",resolved:false,ts:null,phase:"Phase 3"},
   ];
   const c=demoCats[Math.min(catalystsSeen,demoCats.length-1)];
   try{ await fetch(ENDPOINT+"/inject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)}); }
@@ -503,20 +503,29 @@ function resetRun(){
 function setMode(live){
   mode=live?"live":"demo";
   $("toggle").className="toggle"+(live?" live":"");
-  $("modelbl").textContent=live?"LIVE":"DEMO";
+  $("lbl-demo").style.color = live ? "var(--faint)" : "var(--txt)";
+  $("lbl-live").style.color = live ? "var(--txt)" : "var(--faint)";
   $("inject").style.display=live?"":"none";
-  ["play","step","reset"].forEach(id=>$(id).style.display=live?"none":"");
+  ["play","step"].forEach(id=>$(id).style.display=live?"none":"");  // Reset stays visible in both modes
   resetRun();
   if(live) startLive(); else stopLive();
+}
+async function liveReset(){
+  // Restart the loop ON THE BACKEND (e.g. after it hit its stop condition),
+  // then clear the UI for the next run. Backend without /reset just no-ops.
+  try{ await fetch(ENDPOINT+"/reset",{method:"POST"}); }catch(err){}
+  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1;
+  sectorKeys=""; $("sectors").innerHTML=""; $("log").innerHTML="";
 }
 
 /* ============================ WIRING ============================ */
 $("play").onclick=()=>timer?stopDemo():playDemo();
 $("step").onclick=()=>{ stopDemo(); stepDemo(); };
-$("reset").onclick=resetRun;
+$("reset").onclick=()=>{ if(mode==="live") liveReset(); else resetRun(); };
 $("inject").onclick=inject;
 $("toggle").onclick=()=>setMode(mode==="demo");
 $("inject").style.display="none";
+$("lbl-demo").style.color="var(--txt)"; $("lbl-live").style.color="var(--faint)";  // demo active at load
 document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
   document.querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));
   c.classList.add("on"); const r=c.dataset.range; range=r==="all"?"all":+r; drawChart();
