@@ -264,17 +264,22 @@
 
 <script>
 /* ============================ CONFIG ============================ */
-// Point this at P1's loop when you go LIVE. Locally: http://localhost:8000
-// Once P3 deploys to Akash, swap in the public URL.
-const ENDPOINT = "http://localhost:8000";
+// LIVE backend. Swap for P3's Akash URL WITHOUT editing code — just open:
+//   index.html?api=https://your-akash-url
+// If the loop ends up serving this file itself (same origin), set to "".
+const ENDPOINT = new URLSearchParams(location.search).get("api") || "http://localhost:8000";
 
-const SECTORS = [
-  {key:"drug_maker",  nm:"Drug Makers", tks:"LLY · NVO · VKTX · GPCR"},
-  {key:"snacks",      nm:"Snacks / CPG", tks:"HSY · MDLZ"},
-  {key:"alcohol",     nm:"Alcohol",     tks:"STZ · DEO"},
-  {key:"sleep_apnea", nm:"Sleep Apnea", tks:"RMD · INSP"},
-  {key:"dialysis",    nm:"Dialysis",    tks:"DVA"},
-];
+// Pretty labels for known sectors. Any sector P1/P2 add that isn't listed here
+// still renders — its key is title-cased as a fallback — so this never blocks
+// the universe expansion. The ripple map itself is built from the loop's
+// positions (see buildSectors), so there is NO hand-maintained sector list.
+const SECTOR_LABELS = {
+  drug_maker:"Drug Makers", telehealth:"Telehealth", snacks:"Snacks / CPG",
+  food_cpg:"Food / CPG", alcohol:"Alcohol", sleep_apnea:"Sleep Apnea",
+  medical_devices:"Medical Devices", dialysis:"Dialysis", payers:"Payers",
+};
+const prettySector = k => SECTOR_LABELS[k] || k.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+let sectorKeys = "";  // signature of the rendered sector set — rebuild only on change
 
 /* Embedded mock run (DEMO mode). Same contract the loop emits at GET /state. */
 const EVENTS = [{"tick": 0, "status": "running", "catalyst": null, "active_sectors": [], "log": [{"level": "info", "text": "tick 0 \u00b7 sensing 4 feeds (ClinicalTrials.gov, openFDA, prices, news)"}, {"level": "muted", "text": "no new catalysts \u00b7 2 open on watchlist \u00b7 book flat"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 812.0, "shares": 10, "pnl": 0.0}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 62.0, "shares": 100, "pnl": 0.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 34.0, "shares": 100, "pnl": 0.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 28.0, "shares": 100, "pnl": 0.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 168.0, "shares": -20, "pnl": -0.0}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 66.0, "shares": -50, "pnl": -0.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 240.0, "shares": -10, "pnl": -0.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 128.0, "shares": -20, "pnl": -0.0}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 233.0, "shares": -10, "pnl": -0.0}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 195.0, "shares": -10, "pnl": -0.0}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 145.0, "shares": -10, "pnl": -0.0}], "pnl_total": 0.0}, {"tick": 1, "status": "running", "catalyst": {"headline": "Structure aleniglipron Phase 3 positive", "source": "ClinicalTrials.gov + news", "type": "phase3_readout_positive"}, "active_sectors": [{"sector": "drug_maker", "delta": 1.0}, {"sector": "snacks", "delta": -0.4}, {"sector": "alcohol", "delta": -0.3}, {"sector": "sleep_apnea", "delta": -0.3}, {"sector": "dialysis", "delta": -0.1}], "log": [{"level": "catalyst", "text": "CATALYST \u00b7 Structure Therapeutics (GPCR) aleniglipron Phase 3 obesity readout POSITIVE \u2014 16.3% weight loss, 2% discontinuation"}, {"level": "info", "text": "sensed via ClinicalTrials.gov NCT + news feed \u00b7 classified type=phase3_readout_positive \u00b7 primary=GPCR"}, {"level": "info", "text": "propagating through impact graph \u2192 drug_maker\u2191 snacks\u2193 alcohol\u2193 sleep_apnea\u2193 dialysis\u2193"}, {"level": "good", "text": "book updated \u00b7 P&L +$2,132"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 836.36, "shares": 10, "pnl": 243.6}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 228.34, "shares": -10, "pnl": 46.6}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 191.1, "shares": -10, "pnl": 39.0}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2132.0}, {"tick": 2, "status": "running", "catalyst": null, "active_sectors": [], "log": [{"level": "warn", "text": "verification gate \u00b7 extracted phase='Phase 2' \u2014 MISMATCH vs ClinicalTrials.gov schema (Phase 3)"}, {"level": "warn", "text": "self-correct \u00b7 re-extracting fields before commit\u2026"}, {"level": "good", "text": "gate passed \u00b7 phase=Phase 3 confirmed \u00b7 commit accepted"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 836.36, "shares": 10, "pnl": 243.6}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 228.34, "shares": -10, "pnl": 46.6}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 191.1, "shares": -10, "pnl": 39.0}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2132.0}, {"tick": 3, "status": "running", "catalyst": {"headline": "Zepbound expanded to sleep apnea", "source": "openFDA", "type": "new_indication_sleep_apnea"}, "active_sectors": [{"sector": "sleep_apnea", "delta": -0.8}, {"sector": "drug_maker", "delta": 0.3}], "log": [{"level": "catalyst", "text": "CATALYST \u00b7 openFDA \u2014 Zepbound (LLY) expanded label: obstructive sleep apnea"}, {"level": "info", "text": "classified type=new_indication_sleep_apnea \u00b7 propagating \u2192 sleep_apnea\u2193\u2193 drug_maker\u2191"}, {"level": "good", "text": "book updated \u00b7 RMD/INSP short thesis deepened \u00b7 P&L +$2,509"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 853.09, "shares": 10, "pnl": 410.9}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 216.92, "shares": -10, "pnl": 160.8}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 181.55, "shares": -10, "pnl": 134.5}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2509.0}, {"tick": 4, "status": "stopped", "catalyst": null, "active_sectors": [], "log": [{"level": "info", "text": "tick 4 \u00b7 GPCR readout marked RESOLVED \u00b7 realizing leg P&L"}, {"level": "stop", "text": "STOP CONDITION MET \u00b7 2/2 watched catalysts resolved \u00b7 loop halted"}, {"level": "good", "text": "final book P&L +$2,509 \u00b7 runtime clean exit"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 853.09, "shares": 10, "pnl": 410.9}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 216.92, "shares": -10, "pnl": 160.8}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 181.55, "shares": -10, "pnl": 134.5}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2509.0}];
@@ -291,11 +296,17 @@ const $ = id => document.getElementById(id);
 const money = n => (n>=0?"+$":"-$") + Math.abs(Math.round(n)).toLocaleString();
 const sumSide = (pos,side) => pos.filter(p=>p.side===side).reduce((a,p)=>a+p.pnl,0);
 
-function buildSectors(){
-  const el = $("sectors"); el.innerHTML = "";
-  SECTORS.forEach(s=>el.insertAdjacentHTML("beforeend",
-    `<div class="sec" id="sec-${s.key}"><div class="dl" id="dl-${s.key}"></div>
-       <div class="nm">${s.nm}</div><div class="tk">${s.tks}</div></div>`));
+// (Re)build the sector cards from the loop's positions — but only when the set
+// of sectors actually changes, so the glow animation doesn't flicker each tick.
+function buildSectors(positions){
+  const order=[], byKey={};
+  (positions||[]).forEach(p=>{ if(!byKey[p.sector]){byKey[p.sector]=[];order.push(p.sector);} byKey[p.sector].push(p.ticker); });
+  const sig=order.join(",");
+  if(sig===sectorKeys) return; sectorKeys=sig;
+  const el=$("sectors"); el.innerHTML="";
+  order.forEach(k=>el.insertAdjacentHTML("beforeend",
+    `<div class="sec" id="sec-${k}"><div class="dl" id="dl-${k}"></div>
+       <div class="nm">${prettySector(k)}</div><div class="tk">${byKey[k].join(" · ")}</div></div>`));
 }
 
 /* ---- area chart (multi-series, smoothed, direct end-labels) ---- */
@@ -370,11 +381,12 @@ function render(e){
     cat.innerHTML=`<span class="tag">${e.catalyst.type}</span><span>${e.catalyst.headline} · <span style="color:var(--dim)">${e.catalyst.source}</span></span>`;
   } else { cat.className="catbar"; cat.innerHTML=`<span class="tag">IDLE</span><span>scanning feeds…</span>`; }
 
-  // sectors
+  // sectors — derived from positions, so any new sector P1/P2 ship just appears
+  buildSectors(e.positions);
   const active={}; (e.active_sectors||[]).forEach(a=>active[a.sector]=a.delta);
-  SECTORS.forEach(s=>{
-    const node=$("sec-"+s.key), dl=$("dl-"+s.key); node.className="sec";
-    if(s.key in active){ const up=active[s.key]>0; node.classList.add(up?"up":"down","hit");
+  [...new Set((e.positions||[]).map(p=>p.sector))].forEach(k=>{
+    const node=$("sec-"+k), dl=$("dl-"+k); if(!node) return; node.className="sec";
+    if(k in active){ const up=active[k]>0; node.classList.add(up?"up":"down","hit");
       dl.textContent=up?"▲":"▼"; setTimeout(()=>node.classList.remove("hit"),500);
     } else dl.textContent="";
   });
@@ -457,8 +469,8 @@ async function inject(){
 function resetRun(){
   stopDemo();
   i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1;
-  $("log").innerHTML=""; buildSectors();
-  if(mode==="demo") showDemo(0);
+  sectorKeys=""; $("sectors").innerHTML=""; $("log").innerHTML="";
+  if(mode==="demo") showDemo(0);  // render() rebuilds the sector cards from data
 }
 function setMode(live){
   mode=live?"live":"demo";
@@ -482,8 +494,7 @@ document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
   c.classList.add("on"); const r=c.dataset.range; range=r==="all"?"all":+r; drawChart();
 });
 
-buildSectors();
-showDemo(0);
+showDemo(0);  // first render builds the sector cards from the data
 </script>
 </body>
 </html>
