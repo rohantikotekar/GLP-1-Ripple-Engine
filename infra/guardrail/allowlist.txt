@@ -1,0 +1,13 @@
+# Egress allowlist — the ONLY domains the autonomous agent may reach.
+# One domain suffix per line. A request to host H is allowed iff H equals an
+# entry or ends with "." + entry (so api.fda.gov matches fda.gov).
+# Everything not matched here is denied. This is the guardrail on the book.
+#
+# Four data sources (P2):
+
+clinicaltrials.gov        # source 1 — trial phase / status
+api.fda.gov               # source 2 — openFDA REST API (real request host)
+open.fda.gov              # source 2 — openFDA docs/portal host
+query1.finance.yahoo.com  # source 3 — Yahoo Finance / yfinance backend
+query2.finance.yahoo.com  # source 3 — Yahoo Finance failover host
+newsapi.org               # source 4 — NewsAPI headlines (RSS/news)
