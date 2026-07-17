@@ -58,6 +58,9 @@
   .btn:hover{border-color:var(--violet);color:#fff}
   .btn.primary{background:var(--lime);color:#0e0e11;border-color:var(--lime)}
   .btn.primary:hover{filter:brightness(1.05);color:#0e0e11}
+  .btn.primary:disabled{opacity:.55;cursor:wait}
+  .btn.flash{animation:btnflash .55s ease}
+  @keyframes btnflash{0%,100%{filter:none}40%{filter:brightness(1.25) saturate(1.2)}}
 
   .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;align-items:start}
   @media(max-width:1080px){.grid{grid-template-columns:1fr}}
@@ -306,7 +309,41 @@ let i = 0, timer = null, livePoll = null, lastLiveTick = -1;
 let history = [];            // [{tick, net, longP, shortP}]
 let range = 8;
 let gateSeen = false, catalystsSeen = 0, lastAnimTick = -1, netShown = 0;
+let injectIdx = 0;           // which sample catalyst to fire next (LIVE)
+let waitLogged = false;      // don't spam "waiting for loop" lines
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Sample inject sequence — dual-shape (headline+detail) so names never show "null".
+// Ordered so all 4 fire before stop on current Akash (portfolio GPCR+LLY) AND
+// on newer builds (portfolio GPCR+LLY+VKTX+NVO).
+const DEMO_CATS = [
+  {id:"NCT-DEMO-ALENIGLIPRON",type:"phase3_readout",ticker_primary:"GPCR",
+   detail:"Structure aleniglipron Phase 3 positive",
+   headline:"Structure aleniglipron Phase 3 positive",
+   source:"ClinicalTrials.gov + news",resolved:false,ts:null,phase:"Phase 2b"},
+  {id:"NCT-DEMO-VKTX-PHASE3",type:"phase3_readout",ticker_primary:"VKTX",
+   detail:"Viking VK2735 Phase 3 obesity readout positive",
+   headline:"Viking VK2735 Phase 3 obesity readout positive",
+   source:"ClinicalTrials.gov + news",resolved:false,ts:null,phase:"Phase 3"},
+  {id:"NDA-DEMO-NVO-WEGOVY-PILL",type:"approval",ticker_primary:"NVO",
+   detail:"Novo Wegovy pill FDA approval — oral GLP-1 enters market",
+   headline:"Novo Wegovy pill FDA approval — oral GLP-1 enters market",
+   source:"openFDA",resolved:false,ts:null,phase:"Phase 3"},
+  {id:"NDA-DEMO-ZEPBOUND-SLEEPAPNEA",type:"new_indication",ticker_primary:"LLY",
+   detail:"Zepbound expanded to sleep apnea",
+   headline:"Zepbound expanded to sleep apnea",
+   source:"openFDA",resolved:false,ts:null,phase:"Phase 3"},
+];
+const DEMO_N = DEMO_CATS.length; // button + banner show n/N
+// Old Akash sometimes returns empty active_sectors — paint ripples client-side.
+const RIPPLE_BY_TYPE = {
+  phase3_readout:[{sector:"drug_maker",delta:1},{sector:"snacks",delta:-.4},{sector:"alcohol",delta:-.3},{sector:"sleep_apnea",delta:-.3},{sector:"dialysis",delta:-.1}],
+  phase3_readout_positive:[{sector:"drug_maker",delta:1},{sector:"snacks",delta:-.4},{sector:"alcohol",delta:-.3},{sector:"sleep_apnea",delta:-.3},{sector:"dialysis",delta:-.1}],
+  new_indication:[{sector:"sleep_apnea",delta:-.8},{sector:"drug_maker",delta:.3}],
+  new_indication_sleep_apnea:[{sector:"sleep_apnea",delta:-.8},{sector:"medical_devices",delta:-.5},{sector:"drug_maker",delta:.3}],
+  approval:[{sector:"drug_maker",delta:.7},{sector:"snacks",delta:-.3},{sector:"alcohol",delta:-.2}],
+  rx_volume:[{sector:"drug_maker",delta:.4},{sector:"snacks",delta:-.4},{sector:"alcohol",delta:-.3}],
+};
 
 /* ============================ HELPERS ============================ */
 const $ = id => document.getElementById(id);
@@ -405,15 +442,36 @@ function render(e){
   $("s-long").textContent=money(longP);
   $("s-short").textContent=money(shortP);
 
-  // catalyst banner
+  // catalyst banner — never paint literal "null"; LIVE idle shows n/N progress
   const cat=$("cat");
-  if(e.catalyst){ cat.className="catbar active";
-    cat.innerHTML=`<span class="tag">${e.catalyst.type}</span><span>${e.catalyst.headline} · <span style="color:var(--dim)">${e.catalyst.source}</span></span>`;
-  } else { cat.className="catbar"; cat.innerHTML=`<span class="tag">IDLE</span><span>scanning feeds…</span>`; }
+  if(e.catalyst){
+    const headline = e.catalyst.headline || e.catalyst.detail || e.catalyst.type || "catalyst";
+    const source = e.catalyst.source || e.catalyst.id || "feed";
+    const typ = e.catalyst.type || "event";
+    cat.className="catbar active";
+    cat.innerHTML=`<span class="tag">${typ}</span><span>${headline} · <span style="color:var(--dim)">${source}</span></span>`;
+  } else if(mode==="live" && e.status==="stopped"){
+    cat.className="catbar";
+    cat.innerHTML=`<span class="tag">STOP</span><span>${injectIdx}/${DEMO_N} samples done · hit Reset for another run</span>`;
+  } else if(mode==="live" && injectIdx<DEMO_N){
+    const next=DEMO_CATS[injectIdx];
+    cat.className="catbar";
+    cat.innerHTML=`<span class="tag">IDLE</span><span>next ${injectIdx+1}/${DEMO_N} · <b style="color:var(--txt)">${next.ticker_primary}</b> — ${next.headline}</span>`;
+  } else if(mode==="live"){
+    cat.className="catbar";
+    cat.innerHTML=`<span class="tag">DONE</span><span>all ${DEMO_N}/${DEMO_N} sample catalysts fired · hit Reset</span>`;
+  } else {
+    cat.className="catbar";
+    cat.innerHTML=`<span class="tag">IDLE</span><span>scanning feeds…</span>`;
+  }
 
   // sectors — derived from positions; staggered ripple wave on a new tick
   buildSectors(e.positions);
-  const active={}; (e.active_sectors||[]).forEach(a=>active[a.sector]=a.delta);
+  let sectorHits = e.active_sectors||[];
+  if(!sectorHits.length && e.catalyst){
+    sectorHits = RIPPLE_BY_TYPE[e.catalyst.type] || [];
+  }
+  const active={}; sectorHits.forEach(a=>active[a.sector]=a.delta);
   [...new Set((e.positions||[]).map(p=>p.sector))].forEach((k,idx)=>{
     const node=$("sec-"+k), dl=$("dl-"+k); if(!node) return; node.className="sec";
     if(!(k in active)){ dl.textContent=""; return; }
@@ -433,7 +491,7 @@ function render(e){
 
   // loop health donuts
   if((e.log||[]).some(l=>l.level==="warn")) gateSeen=true;
-  const resolvedPct = e.status==="stopped" ? 100 : Math.min(catalystsSeen,2)/2*100;
+  const resolvedPct = e.status==="stopped" ? 100 : Math.min(injectIdx,DEMO_N)/DEMO_N*100;
   setDonut("g-res","g-res-v",resolvedPct);
   setDonut("g-ver","g-ver-v",gateSeen?100:(e.catalyst?60:0));
   const inProfit=e.positions.filter(p=>p.pnl>0).length, tot=e.positions.length;
@@ -473,35 +531,78 @@ function playDemo(){
 function stopDemo(){ clearInterval(timer); timer=null; $("play").textContent="▶ Play"; }
 
 /* ============================ LIVE DRIVER ============================ */
+function updateInjectBtn(){
+  const btn=$("inject");
+  if(injectIdx>=DEMO_N){
+    btn.textContent=`✓ All ${DEMO_N}/${DEMO_N} fired — Reset`;
+    return;
+  }
+  const next=DEMO_CATS[injectIdx];
+  btn.textContent=`⚡ Inject ${injectIdx+1}/${DEMO_N} · ${next.ticker_primary}`;
+}
 async function pollLive(){
   try{
     const e=await (await fetch(ENDPOINT+"/state",{cache:"no-store"})).json();
+    waitLogged=false;
     if(e.tick!==lastLiveTick){
       if(e.catalyst) catalystsSeen++;
       render(e); appendLog(e); lastLiveTick=e.tick;
     } else { render(e); } // keep book/pnl fresh, don't re-log
   }catch(err){
+    if(waitLogged) return;
+    waitLogged=true;
     $("log").insertAdjacentHTML("beforeend",
       `<div class="ln muted"><span class="t">···</span>waiting for loop at ${ENDPOINT} …</div>`);
   }
 }
-function startLive(){ if(livePoll) return; lastLiveTick=-1; pollLive(); livePoll=setInterval(pollLive,2000); }
+function startLive(){ if(livePoll) return; lastLiveTick=-1; waitLogged=false; pollLive(); livePoll=setInterval(pollLive,2000); }
 function stopLive(){ clearInterval(livePoll); livePoll=null; }
 async function inject(){
-  const demoCats=[
-    {id:"NCT-DEMO-ALENIGLIPRON",type:"phase3_readout",ticker_primary:"GPCR",detail:"Structure aleniglipron Phase 3 positive",resolved:false,ts:null,phase:"Phase 2b"},
-    {id:"NDA-DEMO-ZEPBOUND-SLEEPAPNEA",type:"new_indication",ticker_primary:"LLY",detail:"Zepbound expanded to sleep apnea",resolved:false,ts:null,phase:"Phase 3"},
-  ];
-  const c=demoCats[Math.min(catalystsSeen,demoCats.length-1)];
-  try{ await fetch(ENDPOINT+"/inject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)}); }
-  catch(err){ alert("Loop not reachable at "+ENDPOINT); }
+  if(injectIdx>=DEMO_N){
+    $("log").insertAdjacentHTML("beforeend",
+      `<div class="ln muted"><span class="t">···</span>all ${DEMO_N}/${DEMO_N} sample catalysts fired — hit Reset for another run</div>`);
+    return;
+  }
+  const c=DEMO_CATS[injectIdx];
+  const btn=$("inject");
+  btn.disabled=true;
+  btn.textContent=`Injecting ${injectIdx+1}/${DEMO_N} · ${c.ticker_primary}…`;
+  $("log").insertAdjacentHTML("beforeend",
+    `<div class="ln catalyst"><span class="t">···</span>queued ${injectIdx+1}/${DEMO_N} · ${c.headline} · ${c.ticker_primary}</div>`);
+  // Optimistic banner so the room sees the real name before the next /state poll
+  $("cat").className="catbar active";
+  $("cat").innerHTML=`<span class="tag">${c.type}</span><span>${c.headline} · <span style="color:var(--dim)">${c.source}</span></span>`;
+  try{
+    // If the loop already halted, wake it so remaining samples can still land.
+    try{
+      const st=await (await fetch(ENDPOINT+"/state",{cache:"no-store"})).json();
+      if(st.status==="stopped"){
+        await fetch(ENDPOINT+"/reset",{method:"POST"});
+        $("log").insertAdjacentHTML("beforeend",
+          `<div class="ln muted"><span class="t">···</span>loop was stopped — auto-reset so ${injectIdx+1}/${DEMO_N} can run</div>`);
+      }
+    }catch(_){}
+    const r=await fetch(ENDPOINT+"/inject",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    injectIdx++;
+    btn.classList.remove("flash"); void btn.offsetWidth; btn.classList.add("flash");
+    pollLive(); // pull state ASAP so P&L / book update without waiting 2s
+  }catch(err){
+    $("log").insertAdjacentHTML("beforeend",
+      `<div class="ln warn"><span class="t">···</span>inject failed · loop not reachable at ${ENDPOINT}</div>`);
+    alert("Loop not reachable at "+ENDPOINT);
+  }finally{
+    btn.disabled=false;
+    updateInjectBtn();
+  }
 }
 
 /* ============================ SHARED ============================ */
 function resetRun(){
   stopDemo();
-  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1; netShown=0;
+  i=0; history=[]; gateSeen=false; catalystsSeen=0; injectIdx=0; lastLiveTick=-1; lastAnimTick=-1; netShown=0;
   sectorKeys=""; $("sectors").innerHTML=""; $("log").innerHTML="";
+  updateInjectBtn();
   if(mode==="demo") showDemo(0);  // render() rebuilds the sector cards from data
 }
 function setMode(live){
@@ -518,8 +619,9 @@ async function liveReset(){
   // Restart the loop ON THE BACKEND (e.g. after it hit its stop condition),
   // then clear the UI for the next run. Backend without /reset just no-ops.
   try{ await fetch(ENDPOINT+"/reset",{method:"POST"}); }catch(err){}
-  i=0; history=[]; gateSeen=false; catalystsSeen=0; lastLiveTick=-1; lastAnimTick=-1; netShown=0;
+  i=0; history=[]; gateSeen=false; catalystsSeen=0; injectIdx=0; lastLiveTick=-1; lastAnimTick=-1; netShown=0;
   sectorKeys=""; $("sectors").innerHTML=""; $("log").innerHTML="";
+  updateInjectBtn();
 }
 
 /* ============================ WIRING ============================ */

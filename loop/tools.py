@@ -85,11 +85,11 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "inject_demo_catalyst",
-            "description": "Fire one of the two scripted demo catalysts at the running loop's /inject endpoint.",
+            "description": "Fire one of the four scripted demo catalysts at the running loop's /inject endpoint.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "index": {"type": "integer", "description": "0 or 1 — which DEMO_CATALYSTS entry to fire."},
+                    "index": {"type": "integer", "description": "0–3 — which DEMO_CATALYSTS entry to fire."},
                     "url": {"type": "string", "description": "Loop base URL; defaults to http://localhost:8000."},
                 },
                 "required": ["index"],

@@ -34,8 +34,9 @@ def init_state():
         # LOOP-ENG stop condition: the loop researches every company in this
         # portfolio, then halts. A company is marked researched once the loop
         # has processed a catalyst naming it as the primary ticker.
-        "research_portfolio": ["GPCR", "LLY"],
+        "research_portfolio": ["GPCR", "VKTX", "NVO", "LLY"],
         "researched": [],
+        "seen_catalyst_ids": [],  # dedupe across /inject + Nexla feed sense
         "risk_limit": 50000.0,  # LOOP-ENG: max drawdown before the loop force-stops
     }
 

@@ -1,9 +1,15 @@
 import asyncio
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
+# Repo-root .env (NEXLA_*, AKASH_MODEL_*, STATE_PATH, …) — must load before
+# the loop imports anything that reads os.environ at call time.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from loop import state as st, engine
 
@@ -59,7 +65,9 @@ async def loop_task():
             if _state["status"] == "stopped":
                 continue
             cat = _pending.pop(0) if _pending else None
-            _state = engine.tick(_state, cat)
+            # Feed sense (Nexla HTTP + yfinance) is blocking — keep the event
+            # loop free so GET /state stays snappy during a slow pull.
+            _state = await asyncio.to_thread(engine.tick, _state, cat)
             st.save(_state)
 
     asyncio.create_task(run())

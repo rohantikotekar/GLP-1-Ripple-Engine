@@ -34,4 +34,8 @@ class NexlaSource:
             if result.get("source") in _CATALYST_SOURCES
         ]
         prices = feeds.fetch_prices()
-        return {"catalysts": catalysts, "prices": prices}
+        return {
+            "catalysts": catalysts,
+            "prices": prices,
+            "errors": outcome.get("errors") or [],
+        }
