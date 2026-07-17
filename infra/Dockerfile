@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY loop ./loop
 COPY data ./data
+COPY backend ./backend
 COPY contracts ./contracts
 
 EXPOSE 8000
