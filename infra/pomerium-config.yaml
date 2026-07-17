@@ -1,25 +1,55 @@
-# Pomerium egress policy (SPONSOR stub).
-# Guardrail on the autonomous book: the agent may reach ONLY the four data
-# feeds. Everything else is blocked.
-# TODO(P3): wrap the agent's outbound HTTP through this proxy and validate FIRST
-#           (this is the integration to de-risk in hour 1).
+# Pomerium — ingress guardrail on the autonomous book's control API.
+#
+# Two layers of runtime guardrail protect this agent:
+#   1. EGRESS  (outbound): infra/guardrail/ — a default-deny forward proxy that
+#      lets the agent reach ONLY the four data feeds. Enforced + demoed live via
+#      docker-compose (the loop's HTTP(S)_PROXY points at it).
+#   2. INGRESS (inbound, THIS FILE): Pomerium in front of the loop API. Reading
+#      state is open; the endpoints that MOVE THE BOOK (/inject, /reset) are the
+#      dangerous surface on an autonomous trader, so they sit behind policy.
+#
+# This is valid Pomerium v0 config. Run:
+#   docker run -v $PWD/infra/pomerium-config.yaml:/pomerium/config.yaml \
+#     -p 443:443 pomerium/pomerium:latest
+#
+# For a keyless demo the control routes use a shared-secret header check; wire an
+# IdP (google/github/oidc) in front for real auth.
 
-egress_allowlist:
-  - clinicaltrials.gov      # trial phase / status
-  - api.fda.gov             # approvals / indications
-  - query1.finance.yahoo.com  # yfinance price backend
-  - www.fiercepharma.com    # news / RSS
+authenticate_service_url: https://authenticate.localhost.pomerium.io
 
-policy:
-  - from: https://agent.internal
-    to:
-      - https://clinicaltrials.gov
-      - https://api.fda.gov
-      - https://query1.finance.yahoo.com
-      - https://www.fiercepharma.com
-    allow:
-      and:
-        - domain:
-            is: allowlisted
-  # Default deny — any egress not matched above is refused.
-  default_action: deny
+# The upstream is the loop container (compose service name / host:port).
+routes:
+  # Public: anyone (the P4 UI) may read loop state.
+  - from: https://ripple.localhost.pomerium.io
+    to: http://ripple-engine:8000
+    prefix: /state
+    allow_public_unauthenticated_access: true
+    pass_identity_headers: true
+
+  # Guarded: injecting a catalyst or resetting the book changes positions.
+  # Only callers presenting the operator token may reach these.
+  - from: https://ripple.localhost.pomerium.io
+    to: http://ripple-engine:8000
+    prefix: /inject
+    policy:
+      - allow:
+          and:
+            # Swap for `- claim/email: ops@team` once an IdP is wired.
+            - http_header:
+                X-Ripple-Operator:
+                  is: "${RIPPLE_OPERATOR_TOKEN}"
+
+  - from: https://ripple.localhost.pomerium.io
+    to: http://ripple-engine:8000
+    prefix: /reset
+    policy:
+      - allow:
+          and:
+            - http_header:
+                X-Ripple-Operator:
+                  is: "${RIPPLE_OPERATOR_TOKEN}"
+
+# Egress allowlist — single source of truth lives in infra/guardrail/allowlist.txt
+# and is enforced by the forward proxy. Mirrored here for the policy record:
+#   clinicaltrials.gov  api.fda.gov / open.fda.gov
+#   query1/2.finance.yahoo.com  newsapi.org

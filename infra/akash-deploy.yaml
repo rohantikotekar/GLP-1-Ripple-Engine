@@ -1,36 +1,69 @@
 ---
-# Akash SDL — deploys the loop container and exposes port 8000 (SPONSOR stub).
-# TODO(P3): image ref + resources + final pricing.
+# Akash SDL — deploys the autonomous loop BEHIND the egress guardrail.
+# Both containers run in one deployment; the loop's egress is forced through the
+# guardrail (same as infra/docker-compose.yaml), so the production deployment is
+# fenced too, not just local.
+#
+# Akash pulls images from a PUBLIC registry (it cannot build). Before deploying:
+#   1. docker build -f infra/Dockerfile           -t <REGISTRY>/glp1-ripple-engine:latest .
+#   2. docker build -f infra/guardrail/Dockerfile -t <REGISTRY>/glp1-guardrail:latest .
+#   3. docker push <REGISTRY>/glp1-ripple-engine:latest
+#      docker push <REGISTRY>/glp1-guardrail:latest
+#   4. replace <REGISTRY> below (e.g. docker.io/rajashreeshan), then deploy.
 version: "2.0"
 
 services:
+  guardrail:
+    image: <REGISTRY>/glp1-guardrail:latest
+    expose:
+      - port: 3128
+        to:
+          - service: ripple-engine   # only the loop may reach the proxy
+
   ripple-engine:
-    # TODO(P3): push the infra/Dockerfile build and reference it here
-    image: <your-registry>/glp1-ripple-engine:latest
+    image: <REGISTRY>/glp1-ripple-engine:latest
+    env:
+      - HTTP_PROXY=http://guardrail:3128
+      - HTTPS_PROXY=http://guardrail:3128
+      - http_proxy=http://guardrail:3128
+      - https_proxy=http://guardrail:3128
+      - NO_PROXY=localhost,127.0.0.1,guardrail,ripple-engine
+      - no_proxy=localhost,127.0.0.1,guardrail,ripple-engine
+    depends_on:
+      - guardrail
     expose:
       - port: 8000
         as: 80
         to:
-          - global: true
+          - global: true          # public URL P4's UI polls
 
 profiles:
   compute:
+    guardrail:
+      resources:
+        cpu: { units: 0.25 }
+        memory: { size: 256Mi }
+        storage: { size: 256Mi }
     ripple-engine:
       resources:
-        cpu:
-          units: 0.5
-        memory:
-          size: 512Mi
-        storage:
-          size: 512Mi
+        cpu: { units: 0.5 }
+        memory: { size: 512Mi }
+        storage: { size: 512Mi }
   placement:
     dcloud:
       pricing:
+        guardrail:
+          denom: uakt
+          amount: 1000
         ripple-engine:
           denom: uakt
           amount: 1000
 
 deployment:
+  guardrail:
+    dcloud:
+      profile: guardrail
+      count: 1
   ripple-engine:
     dcloud:
       profile: ripple-engine

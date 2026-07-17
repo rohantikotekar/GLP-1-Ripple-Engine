@@ -1,0 +1,35 @@
+# Local integration: the autonomous loop behind the egress guardrail.
+# The loop's outbound traffic is forced through the guardrail via *_PROXY env,
+# so the agent can physically only reach the four allowlisted data feeds.
+#
+#   docker compose -f infra/docker-compose.yaml up --build
+#
+# Then: loop API at http://localhost:8000  (P4 points the UI here)
+
+services:
+  guardrail:
+    build:
+      context: ..
+      dockerfile: infra/guardrail/Dockerfile
+    image: glp1-guardrail:latest
+    ports:
+      - "3128:3128"      # exposed so you can demo allow/deny from the host too
+
+  ripple-engine:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    image: glp1-ripple-engine:latest
+    depends_on:
+      - guardrail
+    ports:
+      - "8000:8000"
+    environment:
+      # Every outbound call the agent makes is routed through the guardrail.
+      HTTP_PROXY: http://guardrail:3128
+      HTTPS_PROXY: http://guardrail:3128
+      http_proxy: http://guardrail:3128
+      https_proxy: http://guardrail:3128
+      # Don't proxy loopback/intra-compose traffic.
+      NO_PROXY: localhost,127.0.0.1,guardrail,ripple-engine
+      no_proxy: localhost,127.0.0.1,guardrail,ripple-engine
