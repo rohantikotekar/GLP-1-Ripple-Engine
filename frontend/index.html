@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>GLP-1 Ripple Engine</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#111823; --panel2:#0d141d; --line:#1e2a38;
+    --txt:#d7e2ef; --dim:#7d8ba0; --green:#2ecc71; --red:#ff5d6c;
+    --cyan:#38d6e0; --amber:#f5b942; --accent:#5b8cff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px}
+  .top{display:flex;align-items:center;gap:16px;padding:12px 18px;
+    border-bottom:1px solid var(--line);background:var(--panel2)}
+  .brand{font-weight:700;letter-spacing:1px;font-size:15px}
+  .brand span{color:var(--cyan)}
+  .pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+    border:1px solid var(--line)}
+  .pill.run{color:var(--green);border-color:#1e5a3a;background:#0e2019}
+  .pill.stop{color:var(--red);border-color:#5a1e28;background:#1f0f12}
+  .tickno{color:var(--dim)}
+  .spacer{flex:1}
+  button{font-family:inherit;font-size:12px;color:var(--txt);background:var(--panel);
+    border:1px solid var(--line);border-radius:6px;padding:7px 14px;cursor:pointer}
+  button:hover{border-color:var(--accent);color:#fff}
+  .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;padding:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .h{font-size:11px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+  /* catalyst banner */
+  .cat{min-height:52px;display:flex;align-items:center;gap:10px;border-radius:8px;
+    padding:10px 12px;border:1px dashed var(--line);color:var(--dim);margin-bottom:12px}
+  .cat.active{border:1px solid var(--cyan);color:var(--txt);background:#0c1a1d;
+    box-shadow:0 0 24px rgba(56,214,224,.15)}
+  .cat .tag{font-size:10px;font-weight:700;color:var(--cyan);border:1px solid #1c4a4f;
+    padding:2px 7px;border-radius:5px;white-space:nowrap}
+  /* sectors */
+  .sectors{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .sec{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px;
+    transition:all .35s;position:relative}
+  .sec .nm{font-weight:700;font-size:12px}
+  .sec .tk{color:var(--dim);font-size:10px;margin-top:4px;line-height:1.5}
+  .sec .delta{position:absolute;top:10px;right:10px;font-size:12px;font-weight:700;opacity:0}
+  .sec.up{border-color:#1e5a3a;box-shadow:0 0 22px rgba(46,204,113,.22)}
+  .sec.up .delta{color:var(--green);opacity:1}
+  .sec.down{border-color:#5a1e28;box-shadow:0 0 22px rgba(255,93,108,.22)}
+  .sec.down .delta{color:var(--red);opacity:1}
+  @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+  .sec.hit{animation:pulse .5s ease}
+  /* book */
+  .pnl{font-size:30px;font-weight:800;letter-spacing:.5px}
+  .pnl.pos{color:var(--green)} .pnl.neg{color:var(--red)}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th{text-align:left;font-size:10px;color:var(--dim);font-weight:600;
+    padding:5px 6px;border-bottom:1px solid var(--line)}
+  td{padding:6px;border-bottom:1px solid #131c27;font-size:12px}
+  .side{font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px}
+  .side.long{color:var(--green);background:#0e2019}
+  .side.short{color:var(--red);background:#1f0f12}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .g{color:var(--green)} .r{color:var(--red)} .d{color:var(--dim)}
+  .grouphd{color:var(--dim);font-size:10px;letter-spacing:1px;padding:10px 6px 2px}
+  /* log */
+  .log{grid-column:1/3;background:#080b10;border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;height:200px;overflow:auto}
+  .ln{padding:2px 0;white-space:pre-wrap;line-height:1.5}
+  .ln.info{color:#9db4d6} .ln.muted{color:var(--dim)} .ln.good{color:var(--green)}
+  .ln.warn{color:var(--amber)} .ln.catalyst{color:var(--cyan);font-weight:700}
+  .ln.stop{color:var(--red);font-weight:700}
+  .ln .t{color:#33506e;margin-right:8px}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand">GLP-1 <span>RIPPLE ENGINE</span></div>
+    <div id="status" class="pill run">RUNNING</div>
+    <div class="tickno">tick <span id="tickno">0</span> / <span id="tickmax">0</span></div>
+    <div class="spacer"></div>
+    <button id="play">▶ Play</button>
+    <button id="step">Step ▸</button>
+    <button id="reset">⟲ Reset</button>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="h">Ripple Map — catalyst → sectors</div>
+      <div id="cat" class="cat"><span class="tag">IDLE</span><span id="cattext">waiting for catalyst…</span></div>
+      <div id="sectors" class="sectors"></div>
+    </div>
+
+    <div class="panel">
+      <div class="h">Long / Short Book</div>
+      <div id="pnl" class="pnl pos">+$0</div>
+      <div class="d" style="font-size:11px;margin-top:2px">unrealized P&amp;L</div>
+      <table><thead><tr>
+        <th>Pos</th><th>Ticker</th><th class="num">Price</th><th class="num">P&amp;L</th>
+      </tr></thead><tbody id="book"></tbody></table>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+<script>
+const EVENTS = [{"tick": 0, "status": "running", "catalyst": null, "active_sectors": [], "log": [{"level": "info", "text": "tick 0 \u00b7 sensing 4 feeds (ClinicalTrials.gov, openFDA, prices, news)"}, {"level": "muted", "text": "no new catalysts \u00b7 2 open on watchlist \u00b7 book flat"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 812.0, "shares": 10, "pnl": 0.0}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 62.0, "shares": 100, "pnl": 0.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 34.0, "shares": 100, "pnl": 0.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 28.0, "shares": 100, "pnl": 0.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 168.0, "shares": -20, "pnl": -0.0}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 66.0, "shares": -50, "pnl": -0.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 240.0, "shares": -10, "pnl": -0.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 128.0, "shares": -20, "pnl": -0.0}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 233.0, "shares": -10, "pnl": -0.0}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 195.0, "shares": -10, "pnl": -0.0}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 145.0, "shares": -10, "pnl": -0.0}], "pnl_total": 0.0}, {"tick": 1, "status": "running", "catalyst": {"headline": "Structure aleniglipron Phase 3 positive", "source": "ClinicalTrials.gov + news", "type": "phase3_readout_positive"}, "active_sectors": [{"sector": "drug_maker", "delta": 1.0}, {"sector": "snacks", "delta": -0.4}, {"sector": "alcohol", "delta": -0.3}, {"sector": "sleep_apnea", "delta": -0.3}, {"sector": "dialysis", "delta": -0.1}], "log": [{"level": "catalyst", "text": "CATALYST \u00b7 Structure Therapeutics (GPCR) aleniglipron Phase 3 obesity readout POSITIVE \u2014 16.3% weight loss, 2% discontinuation"}, {"level": "info", "text": "sensed via ClinicalTrials.gov NCT + news feed \u00b7 classified type=phase3_readout_positive \u00b7 primary=GPCR"}, {"level": "info", "text": "propagating through impact graph \u2192 drug_maker\u2191 snacks\u2193 alcohol\u2193 sleep_apnea\u2193 dialysis\u2193"}, {"level": "good", "text": "book updated \u00b7 P&L +$2,132"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 836.36, "shares": 10, "pnl": 243.6}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 228.34, "shares": -10, "pnl": 46.6}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 191.1, "shares": -10, "pnl": 39.0}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2132.0}, {"tick": 2, "status": "running", "catalyst": null, "active_sectors": [], "log": [{"level": "warn", "text": "verification gate \u00b7 extracted phase='Phase 2' \u2014 MISMATCH vs ClinicalTrials.gov schema (Phase 3)"}, {"level": "warn", "text": "self-correct \u00b7 re-extracting fields before commit\u2026"}, {"level": "good", "text": "gate passed \u00b7 phase=Phase 3 confirmed \u00b7 commit accepted"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 836.36, "shares": 10, "pnl": 243.6}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 228.34, "shares": -10, "pnl": 46.6}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 191.1, "shares": -10, "pnl": 39.0}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2132.0}, {"tick": 3, "status": "running", "catalyst": {"headline": "Zepbound expanded to sleep apnea", "source": "openFDA", "type": "new_indication_sleep_apnea"}, "active_sectors": [{"sector": "sleep_apnea", "delta": -0.8}, {"sector": "drug_maker", "delta": 0.3}], "log": [{"level": "catalyst", "text": "CATALYST \u00b7 openFDA \u2014 Zepbound (LLY) expanded label: obstructive sleep apnea"}, {"level": "info", "text": "classified type=new_indication_sleep_apnea \u00b7 propagating \u2192 sleep_apnea\u2193\u2193 drug_maker\u2191"}, {"level": "good", "text": "book updated \u00b7 RMD/INSP short thesis deepened \u00b7 P&L +$2,509"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 853.09, "shares": 10, "pnl": 410.9}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 216.92, "shares": -10, "pnl": 160.8}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 181.55, "shares": -10, "pnl": 134.5}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2509.0}, {"tick": 4, "status": "stopped", "catalyst": null, "active_sectors": [], "log": [{"level": "info", "text": "tick 4 \u00b7 GPCR readout marked RESOLVED \u00b7 realizing leg P&L"}, {"level": "stop", "text": "STOP CONDITION MET \u00b7 2/2 watched catalysts resolved \u00b7 loop halted"}, {"level": "good", "text": "final book P&L +$2,509 \u00b7 runtime clean exit"}], "positions": [{"ticker": "LLY", "name": "Eli Lilly", "sector": "drug_maker", "side": "long", "entry": 812.0, "price": 853.09, "shares": 10, "pnl": 410.9}, {"ticker": "NVO", "name": "Novo Nordisk", "sector": "drug_maker", "side": "long", "entry": 62.0, "price": 63.24, "shares": 100, "pnl": 124.0}, {"ticker": "VKTX", "name": "Viking Therapeutics", "sector": "drug_maker", "side": "long", "entry": 34.0, "price": 36.04, "shares": 100, "pnl": 204.0}, {"ticker": "GPCR", "name": "Structure Therapeutics", "sector": "drug_maker", "side": "long", "entry": 28.0, "price": 40.6, "shares": 100, "pnl": 1260.0}, {"ticker": "HSY", "name": "Hershey", "sector": "snacks", "side": "short", "entry": 168.0, "price": 164.64, "shares": -20, "pnl": 67.2}, {"ticker": "MDLZ", "name": "Mondelez", "sector": "snacks", "side": "short", "entry": 66.0, "price": 64.68, "shares": -50, "pnl": 66.0}, {"ticker": "STZ", "name": "Constellation Brands", "sector": "alcohol", "side": "short", "entry": 240.0, "price": 236.4, "shares": -10, "pnl": 36.0}, {"ticker": "DEO", "name": "Diageo", "sector": "alcohol", "side": "short", "entry": 128.0, "price": 126.08, "shares": -20, "pnl": 38.4}, {"ticker": "RMD", "name": "ResMed", "sector": "sleep_apnea", "side": "short", "entry": 233.0, "price": 216.92, "shares": -10, "pnl": 160.8}, {"ticker": "INSP", "name": "Inspire Medical", "sector": "sleep_apnea", "side": "short", "entry": 195.0, "price": 181.55, "shares": -10, "pnl": 134.5}, {"ticker": "DVA", "name": "DaVita", "sector": "dialysis", "side": "short", "entry": 145.0, "price": 144.28, "shares": -10, "pnl": 7.2}], "pnl_total": 2509.0}];
+const SECTORS = [
+  {key:"drug_maker", nm:"Drug Makers", tks:"LLY · NVO · VKTX · GPCR"},
+  {key:"snacks",     nm:"Snacks / CPG", tks:"HSY · MDLZ"},
+  {key:"alcohol",    nm:"Alcohol",      tks:"STZ · DEO"},
+  {key:"sleep_apnea",nm:"Sleep Apnea",  tks:"RMD · INSP"},
+  {key:"dialysis",   nm:"Dialysis",     tks:"DVA"},
+];
+
+let i = 0, timer = null;
+document.getElementById("tickmax").textContent = EVENTS.length - 1;
+
+function buildSectors(){
+  const el = document.getElementById("sectors");
+  el.innerHTML = "";
+  SECTORS.forEach(s=>{
+    el.insertAdjacentHTML("beforeend",
+      `<div class="sec" id="sec-${s.key}">
+         <div class="delta" id="d-${s.key}"></div>
+         <div class="nm">${s.nm}</div>
+         <div class="tk">${s.tks}</div>
+       </div>`);
+  });
+}
+
+function render(e){
+  document.getElementById("tickno").textContent = e.tick;
+  const st = document.getElementById("status");
+  st.className = "pill " + (e.status==="stopped"?"stop":"run");
+  st.textContent = e.status.toUpperCase();
+
+  // catalyst banner
+  const cat = document.getElementById("cat");
+  if(e.catalyst){
+    cat.className = "cat active";
+    cat.innerHTML = `<span class="tag">${e.catalyst.type}</span>
+      <span>${e.catalyst.headline} <span class="d">· ${e.catalyst.source}</span></span>`;
+  } else if(e.tick===0){
+    cat.className = "cat"; cat.innerHTML = `<span class="tag">IDLE</span><span>scanning feeds…</span>`;
+  }
+
+  // sectors
+  const active = {}; (e.active_sectors||[]).forEach(a=>active[a.sector]=a.delta);
+  SECTORS.forEach(s=>{
+    const node = document.getElementById("sec-"+s.key);
+    const d = document.getElementById("d-"+s.key);
+    node.className = "sec";
+    if(s.key in active){
+      const up = active[s.key] > 0;
+      node.classList.add(up?"up":"down","hit");
+      d.textContent = up?"▲":"▼";
+      setTimeout(()=>node.classList.remove("hit"),500);
+    } else { d.textContent=""; }
+  });
+
+  // book
+  const longs = e.positions.filter(p=>p.side==="long");
+  const shorts = e.positions.filter(p=>p.side==="short");
+  const row = p => `<tr>
+      <td><span class="side ${p.side}">${p.side.toUpperCase()}</span></td>
+      <td>${p.ticker} <span class="d">${p.name.split(" ")[0]}</span></td>
+      <td class="num">${p.price.toFixed(2)}</td>
+      <td class="num ${p.pnl>=0?'g':'r'}">${p.pnl>=0?'+':''}${p.pnl.toFixed(0)}</td></tr>`;
+  document.getElementById("book").innerHTML =
+    `<tr><td colspan="4" class="grouphd">LONGS — beneficiaries</td></tr>` + longs.map(row).join("") +
+    `<tr><td colspan="4" class="grouphd">SHORTS — disrupted incumbents</td></tr>` + shorts.map(row).join("");
+
+  const pnl = document.getElementById("pnl");
+  pnl.className = "pnl " + (e.pnl_total>=0?"pos":"neg");
+  pnl.textContent = (e.pnl_total>=0?"+$":"-$") + Math.abs(e.pnl_total).toLocaleString();
+}
+
+function appendLog(e){
+  const log = document.getElementById("log");
+  e.log.forEach(l=>{
+    log.insertAdjacentHTML("beforeend",
+      `<div class="ln ${l.level}"><span class="t">t${e.tick}</span>${l.text}</div>`);
+  });
+  log.scrollTop = log.scrollHeight;
+}
+
+function show(idx){ const e = EVENTS[idx]; render(e); appendLog(e); }
+
+function stepFwd(){
+  if(i >= EVENTS.length-1){ stop(); return; }
+  i++; show(i);
+  if(EVENTS[i].status==="stopped") stop();
+}
+function play(){
+  if(timer) return;
+  if(i >= EVENTS.length-1) reset();
+  document.getElementById("play").textContent = "⏸ Pause";
+  timer = setInterval(stepFwd, 2600);
+}
+function stop(){ clearInterval(timer); timer=null; document.getElementById("play").textContent="▶ Play"; }
+function reset(){ stop(); i=0; document.getElementById("log").innerHTML=""; buildSectors(); show(0); }
+
+document.getElementById("play").onclick = ()=> timer?stop():play();
+document.getElementById("step").onclick = ()=>{ stop(); stepFwd(); };
+document.getElementById("reset").onclick = reset;
+
+buildSectors(); show(0);
+</script>
+</body>
+</html>
